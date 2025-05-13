@@ -1,3 +1,8 @@
 fastapi
 uvicorn[standard]
 python-dotenv
+pydantic[dotenv]
+pydantic-settings
+python-multipart   # future‑proof uploads
+pytest
+httpx  # for TestClient
