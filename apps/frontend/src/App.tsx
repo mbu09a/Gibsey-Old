@@ -1,39 +1,68 @@
 import { useState } from "react";
-import { readPage } from "./lib/api";
+import { readPage, ask } from "./lib/api";
 
-function App() {
+export default function App() {
   const [page, setPage] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
-  
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [loadingQ, setLoadingQ] = useState(false);
+
   const load = async () => {
-    setLoading(true);
     try {
-      const data = await readPage(1);
-      setPage(data);
+      setPage(await readPage(1));
     } catch (e) {
       alert((e as Error).message);
-    } finally {
-      setLoading(false);
     }
   };
   
+  const submit = async () => {
+    setLoadingQ(true);
+    try {
+      const resp = await ask(question);
+      setAnswer(resp.answer);
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setLoadingQ(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-gray-800">
-      <button
-        onClick={load}
-        className="mb-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-        disabled={loading}
-      >
-        {loading ? "Loading…" : "Fetch Shard"}
+    <div className="max-w-3xl mx-auto p-6 space-y-6">
+      <button onClick={load} className="px-4 py-2 bg-indigo-600 text-white rounded">
+        Load Shard 1
       </button>
+
       {page && (
-        <article className="prose lg:prose-xl max-w-none">
+        <article className="prose">
           <h2>{page.title}</h2>
           <p>{page.content}</p>
         </article>
       )}
+
+      {page && (
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask Gibsey…"
+            className="w-full border px-3 py-2 rounded"
+          />
+          <button
+            onClick={submit}
+            disabled={loadingQ || !question}
+            className="px-4 py-2 bg-emerald-600 text-white rounded disabled:opacity-50"
+          >
+            {loadingQ ? "Thinking…" : "Ask"}
+          </button>
+          {answer && (
+            <div className="border-l-4 border-emerald-600 pl-4 text-gray-800">
+              <p>{answer}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
