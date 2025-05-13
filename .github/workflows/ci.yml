@@ -11,8 +11,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install ruff==0.4.1
+      - run: pip install ruff==0.4.1 pytest supabase
       - run: ruff --output-format=github . || true  # allow warnings for now
+      - name: test
+        run: |
+          pip install pytest
+          pytest -q app || true  # don't fail pipeline yet
   frontend-lint:
     runs-on: ubuntu-latest
     defaults:
