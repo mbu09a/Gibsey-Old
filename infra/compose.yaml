@@ -1,0 +1,15 @@
+name: gibsey-dev-stack
+services:
+  backend:
+    build: ../apps/backend
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ../apps/backend:/code
+    ports: ["8000:8000"]
+
+  db:
+    image: supabase/postgres:15
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: gibsey
+    ports: ["5432:5432"]
