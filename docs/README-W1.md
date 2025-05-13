@@ -6,7 +6,7 @@ Sprint Goal | Stand up Docker‑compose stack that serves **one** shard via `/re
 Duration | 7 days (5/12/2025-5/19/2025)
 
 ## Daily Checklist
-- [ ] Day 0 – Kickoff & Scope‑freeze
+- [x] Day 0 – Kickoff & Scope‑freeze
 - [ ] Day 1 – Repo & CI skeleton
 - [ ] Day 2 – Backend bootstrap
 - [ ] Day 3 – Database up
