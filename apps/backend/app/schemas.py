@@ -6,3 +6,8 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
+
+class VaultSaveRequest(BaseModel):
+    page_id: int
+    question: str
+    answer: str

@@ -18,3 +18,13 @@ export async function ask(question: string) {
   console.log(`🕒 /ask round‑trip: ${Math.round(t1 - t0)} ms`);
   return json;
 }
+
+export async function saveVault(page_id: number, q: string, a: string) {
+  const base = import.meta.env.VITE_API_BASE;
+  const r = await fetch(`${base}/vault/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page_id, question: q, answer: a }),
+  });
+  if (!r.ok) throw new Error("Vault save failed");
+}

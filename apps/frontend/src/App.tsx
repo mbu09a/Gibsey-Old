@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { readPage, ask } from "./lib/api";
+import { readPage, ask, saveVault } from "./lib/api";
 
 export default function App() {
   const [page, setPage] = useState<any | null>(null);
@@ -59,6 +59,12 @@ export default function App() {
           {answer && (
             <div className="border-l-4 border-emerald-600 pl-4 text-gray-800">
               <p>{answer}</p>
+              <button
+                onClick={() => saveVault(1, question, answer)}
+                className="mt-2 px-3 py-1 bg-amber-600 text-white rounded"
+              >
+                Save to Vault
+              </button>
             </div>
           )}
         </div>

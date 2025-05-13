@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from starlette.middleware.cors import CORSMiddleware
 from .config import Settings, get_settings
 from .db import Supabase
-from .schemas import AskRequest, AskResponse
+from .schemas import AskRequest, AskResponse, VaultSaveRequest
 import time
 
 app = FastAPI()
@@ -43,3 +43,15 @@ async def ask(req: AskRequest):
     elapsed = (time.perf_counter() - start) * 1000
     print(f"/ask latency {elapsed:.0f} ms")
     return {"answer": answer}
+
+@app.post("/vault/save", status_code=201)
+async def save_to_vault(req: VaultSaveRequest):
+    Supabase.client() \
+        .table("vault") \
+        .insert({
+            "page_id": req.page_id,
+            "question": req.question,
+            "answer": req.answer,
+        }) \
+        .execute()
+    return {"ok": True}
