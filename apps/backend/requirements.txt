@@ -7,3 +7,4 @@ python-multipart   # future‑proof uploads
 pytest
 httpx  # for TestClient
 supabase>=2.0.0  # official Python client
+openai>=1.23  # for embeddings
