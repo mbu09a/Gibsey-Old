@@ -8,8 +8,9 @@ services:
     ports: ["8000:8000"]
 
   db:
-    image: supabase/postgres:15
+    image: postgres:15
     environment:
+      POSTGRES_USER: gibsey
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: gibsey
     ports: ["5432:5432"]
