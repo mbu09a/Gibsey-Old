@@ -7,7 +7,7 @@ Duration | 7 days (5/12/2025-5/19/2025)
 
 ## Daily Checklist
 - [x] Day 0 – Kickoff & Scope‑freeze
-- [ ] Day 1 – Repo & CI skeleton
+- [x] Day 1 – Repo & CI skeleton
 - [ ] Day 2 – Backend bootstrap
 - [ ] Day 3 – Database up
 - [ ] Day 4 – Embedding stub
