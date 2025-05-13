@@ -27,4 +27,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: echo "TODO: add eslint when frontend bootstrapped"
+      - name: eslint stub
+        run: npx -y eslint --init || true  # will exit 0 because not yet configured
