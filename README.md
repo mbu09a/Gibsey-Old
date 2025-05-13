@@ -27,7 +27,7 @@ Full loop: `React → FastAPI → Supabase → React` in ≤ 2 seconds.
 ## Repository Structure
 
 ```bash
-gibsey-mvp/
+gibsey/
 ├── apps
 │   ├── frontend # React (Vite + Tailwind)
 │   └── backend  # FastAPI + Python 3.11
