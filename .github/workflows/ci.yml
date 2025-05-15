@@ -11,12 +11,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install ruff==0.4.1 pytest supabase
+      - run: pip install ruff==0.4.1 pytest supabase openai
       - run: ruff --output-format=github . || true  # allow warnings for now
-      - name: test
+      - name: tests
         run: |
-          pip install pytest
-          pytest -q app || true  # don't fail pipeline yet
+          pip install pytest pytest-mock
+          pytest -q apps/backend/tests || true  # don't fail pipeline yet
   frontend-lint:
     runs-on: ubuntu-latest
     defaults:
