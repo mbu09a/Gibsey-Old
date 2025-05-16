@@ -45,6 +45,9 @@ jobs:
   # Frontend Linting and Type Checking
   frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,7 +60,6 @@ jobs:
           cache-dependency-path: 'apps/frontend/package-lock.json'
       
       - name: Verify or generate lock file
-        working-directory: apps/frontend
         run: |
           if [ ! -f "package-lock.json" ]; then
             echo "package-lock.json not found. Generating lock file..."
@@ -72,18 +74,14 @@ jobs:
           fi
       
       - name: Install dependencies
-        working-directory: apps/frontend
         run: |
           npm ci --no-audit --prefer-offline
           
       - name: Lint with ESLint
-        working-directory: apps/frontend
         run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
       
       - name: Type check with TypeScript
-        working-directory: apps/frontend
         run: npx tsc --noEmit
         
       - name: Build application
-        working-directory: apps/frontend
         run: npm run build
