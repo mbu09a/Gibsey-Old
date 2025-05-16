@@ -1,21 +1,20 @@
 #!/bin/bash
 # wait-for-postgres.sh
-# Source: https://docs.docker.com/compose/startup-order/
+# Simple script to wait for PostgreSQL to be available
 
 set -e
 
-host="$1"
-shift
-user="$1"
-shift
-password="$1"
-shift
-cmd="$@"
+# Default values
+HOST=${1:-localhost}
+PORT=${2:-5432}
+USER=${3:-postgres}
+PASSWORD=${4:-postgres}
+DB=${5:-postgres}
 
-until PGPASSWORD=$password psql -h "$host" -U "$user" -c '\q' 2>/dev/null; do
-  >&2 echo "Postgres is unavailable - sleeping"
+# Wait for PostgreSQL to be available
+until PGPASSWORD="$PASSWORD" psql -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" -c '\q' 2>/dev/null; do
+  >&2 echo "PostgreSQL is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "Postgres is up - executing command"
-exec $cmd
+>&2 echo "PostgreSQL is up and running"
