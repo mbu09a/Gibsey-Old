@@ -34,9 +34,12 @@ gibsey/
 ├── infra
 │   └── compose.yaml # Docker Compose setup
 ├── scripts
-│   └── embed_seed.py # OpenAI embeddings seeder
+│   ├── embed_seed.py # OpenAI embeddings seeder
+│   └── build_and_tag.sh # Docker image build & tag script
 └── docs
-    └── README-W1.md # Week 1 Overview & Checklist
+    ├── README-W1.md # Week 1 Overview & Checklist
+    └── architecture/
+        └── IMAGES.md # Docker image versioning policy
 ```
 
 ---
