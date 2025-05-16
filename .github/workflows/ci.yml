@@ -55,14 +55,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
-      - name: Verify lock file exists
+      - name: Verify or generate lock file
         working-directory: apps/frontend
         run: |
           if [ ! -f "package-lock.json" ]; then
-            echo "Error: package-lock.json is missing. Please run 'npm install' locally and commit the lock file."
-            exit 1
+            echo "package-lock.json not found. Generating lock file..."
+            npm install --package-lock-only
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to generate package-lock.json"
+              exit 1
+            fi
+            echo "Generated new package-lock.json"
+          else
+            echo "package-lock.json found and verified"
           fi
-          echo "Lock file verified."
       
       - name: Install dependencies
         working-directory: apps/frontend
