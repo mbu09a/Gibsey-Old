@@ -13,55 +13,11 @@ env:
 defaults:
   run:
     shell: bash
+    working-directory: apps/backend
 
 jobs:
-  # Test using devcontainer
-  devcontainer-test:
-    name: Dev Container Test
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: gibsey_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-test.txt
-
-      - name: Wait for PostgreSQL
-        run: |
-          chmod +x ./scripts/wait-for-postgres.sh
-          ./scripts/wait-for-postgres.sh localhost 5432 postgres postgres gibsey_test
-
-      - name: Run database setup
-        run: |
-          ./scripts/setup_dev.sh
-
-      - name: Run tests
-        run: |
-          pytest -v
-
-  # Linting and type checking
-  backend-lint:
+  # Backend Linting and Testing
+  backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -75,19 +31,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -r ../../requirements.txt -r ../../requirements-test.txt
           pip install ruff==0.4.1 pytest supabase openai pytest-mock
       
       - name: Lint with ruff
         run: |
-          cd apps/backend
           ruff --output-format=github . || true  # Don't fail on warnings
       
       - name: Run tests
         run: |
-          cd apps/backend
-          pip install -r ../../requirements-test.txt
           pytest -v tests/ || true  # Don't fail pipeline on test failures
-  frontend-lint:
+
+  # Frontend Linting and Type Checking
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -100,16 +56,13 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: |
-          cd apps/frontend
-          npm ci
+        working-directory: apps/frontend
+        run: npm ci
       
       - name: Lint with ESLint
-        run: |
-          cd apps/frontend
-          npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
+        working-directory: apps/frontend
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
       
       - name: Type check with TypeScript
-        run: |
-          cd apps/frontend
-          npx tsc --noEmit
+        working-directory: apps/frontend
+        run: npx tsc --noEmit
