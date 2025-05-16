@@ -10,7 +10,7 @@ DB_PARAMS = {
     "user": "postgres",
     "password": "postgres",
     "host": "localhost",
-    "port": 5432
+    "port": 5433
 }
 
 def test_database_connection():

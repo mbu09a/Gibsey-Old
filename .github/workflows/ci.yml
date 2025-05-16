@@ -8,7 +8,7 @@ env:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   POSTGRES_DB: gibsey_test
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gibsey_test
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5433/gibsey_test
 
 defaults:
   run:

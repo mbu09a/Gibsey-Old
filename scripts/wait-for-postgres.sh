@@ -6,7 +6,7 @@ set -e
 
 # Default values
 HOST=${1:-localhost}
-PORT=${2:-5432}
+PORT=${2:-5433}
 USER=${3:-postgres}
 PASSWORD=${4:-postgres}
 DB=${5:-postgres}
