@@ -57,8 +57,9 @@ jobs:
       
       - name: Install dependencies
         working-directory: apps/frontend
-        run: npm ci
-      
+        run: |
+          npm ci --no-audit --prefer-offline
+          
       - name: Lint with ESLint
         working-directory: apps/frontend
         run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
@@ -66,3 +67,7 @@ jobs:
       - name: Type check with TypeScript
         working-directory: apps/frontend
         run: npx tsc --noEmit
+        
+      - name: Build application
+        working-directory: apps/frontend
+        run: npm run build
