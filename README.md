@@ -1,4 +1,4 @@
-# Gibsey MVP 🌀
+# Gibsey MVP 🌀 [![CI](https://github.com/yourusername/gibsey/actions/workflows/ci.yml/badge.svg?branch=codex-prep)](https://github.com/yourusername/gibsey/actions/workflows/ci.yml)
 
 > **A Novel AI OS**
 
@@ -17,10 +17,10 @@ A minimal, functional stack:
 
 * React (Vite) frontend
 * FastAPI backend
-* Supabase (Postgres + pgvector)
+* PostgreSQL with pgvector
 * OpenAI embeddings & GPT-4o
 
-Full loop: `React → FastAPI → Supabase → React` in ≤ 2 seconds.
+Full loop: `React → FastAPI → PostgreSQL → React` in ≤ 2 seconds.
 
 ---
 
@@ -31,67 +31,156 @@ gibsey/
 ├── apps
 │   ├── frontend # React (Vite + Tailwind)
 │   └── backend  # FastAPI + Python 3.11
-├── infra
-│   └── compose.yaml # Docker Compose setup
+├── db
+│   └── init.sql     # Database schema and initialization
 ├── scripts
+│   ├── setup_dev.sh # Development environment setup
+│   ├── reset_db.sh  # Database reset for testing
 │   └── embed_seed.py # OpenAI embeddings seeder
+├── tests            # Test suite
+├── docker-compose.yml # Local development stack
 └── docs
-    └── README-W1.md # Week 1 Overview & Checklist
+    ├── README-W1.md # Week 1 Overview & Checklist
+    └── architecture/
+        └── IMAGES.md # Docker image versioning policy
 ```
 
 ---
 
 ## Quickstart
 
-### Prerequisites
+### Option 1: Local Development
+
+#### Prerequisites
 
 * Docker & Docker Compose
-* Node (≥20), Python (≥3.11)
+* Python 3.11+
+* Node.js 18+ (for frontend development)
 
-### Setup & Run
+### Option 2: Dev Container (Recommended)
+
+The easiest way to get started is using VS Code's Dev Containers or GitHub Codespaces.
+
+#### Prerequisites
+
+* [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+#### Setup
+
+1. **Open in Dev Container**
+   ```bash
+   # Clone the repository
+   git clone https://github.com/yourusername/gibsey.git
+   cd gibsey
+   
+   # Open in VS Code
+   code .
+   ```
+   
+   Then:
+   - Press `F1` or `Cmd+Shift+P` to open the command palette
+   - Select "Dev Containers: Reopen in Container"
+   - Wait for the container to build and start (first time may take a few minutes)
+
+2. **Verify the environment**
+   - The backend will be available at http://localhost:8000
+   - The frontend will be available at http://localhost:5173
+   - The database will be running in the background
+
+#### Using GitHub Codespaces
+
+Alternatively, you can use GitHub Codespaces:
 
 ```bash
-# Clone & enter repo
-git clone <repo_url> && cd gibsey-mvp
-
-# Docker Compose (build & start)
-docker compose -f infra/compose.yaml up --build -d
+git clone https://github.com/yourusername/gibsey.git
+cd gibsey
+gh codespace create --repo yourusername/gibsey --devcontainer-path .devcontainer/devcontainer.json
 ```
 
-Check health:
+### Option 3: Local Development (Manual)
+
+Follow these steps if you prefer to run everything locally:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/gibsey.git
+   cd gibsey
+   ```
+
+2. **Set up the development environment**
+   ```bash
+   # Start the database
+   docker compose up -d db
+   
+   # Run the setup script
+   ./scripts/setup_dev.sh
+   ```
+
+3. **Install Python dependencies**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   pip install -r requirements-test.txt
+   ```
+
+4. **Start the development servers**
+   ```bash
+   # Backend (in one terminal)
+   cd apps/backend && uvicorn main:app --reload
+   
+   # Frontend (in another terminal)
+   cd apps/frontend && npm install && npm run dev
+   ```
+
+   The application should now be available at http://localhost:5173
+
+### Running Tests
 
 ```bash
-curl http://localhost:8000/health
+# Run all tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=.
+
+# Reset the test database
+./scripts/reset_db.sh
 ```
 
-Frontend:
+### Database Management
 
-```bash
-cd apps/frontend && pnpm run dev
-# Open http://localhost:5173
-```
+- **Initialize database**: `docker compose up -d db`
+- **Run migrations**: `psql -h localhost -U postgres -d gibsey -f db/init.sql`
+- **Reset database**: `./scripts/reset_db.sh`
 
----
+### Daily Workflow
 
-## Daily Workflow (Week 1)
-
-* **Pre-session (5 min)** — read yesterday’s commit; open a new issue.
-* **Pomodoro (45 min)** — work in small slices; commit runnable changes.
-* **End-session** — push & write 2-sentence progress summary.
+* **Pre-session (5 min)** — review previous work and plan tasks
+* **Work session (45 min)** — implement features in small, testable chunks
+* **End-session** — commit changes and document progress
 
 ---
 
 ## Contributing
 
-Use feature branches based on daily tasks (`day1-task-name`) and merge via pull request. CI will lint and verify your changes. Clearly document and test your contributions.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Make your changes and write tests
+3. Run tests: `pytest`
+4. Commit your changes: `git commit -m "Add your feature"`
+5. Push to the branch: `git push origin feature/your-feature`
+6. Open a pull request
 
 ---
 
 ## Resources & Documentation
 
-* [Supabase](https://supabase.com/docs)
 * [FastAPI](https://fastapi.tiangolo.com/)
 * [React + Vite](https://vitejs.dev/guide/)
+* [PostgreSQL](https://www.postgresql.org/docs/)
 * [pgvector](https://github.com/pgvector/pgvector)
 * [OpenAI API](https://platform.openai.com/docs)
 

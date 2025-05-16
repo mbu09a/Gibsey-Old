@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { readPage, ask, saveVault } from "./lib/api";
 
+interface PageData {
+  id: number;
+  title?: string;
+  content: string;
+  // Add other properties as needed based on the actual API response
+  [key: string]: unknown;
+}
+
 export default function App() {
-  const [page, setPage] = useState<any | null>(null);
+  const [page, setPage] = useState<PageData | null>(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [loadingQ, setLoadingQ] = useState(false);
@@ -35,7 +43,7 @@ export default function App() {
 
       {page && (
         <article className="prose">
-          <h2>{page.title}</h2>
+          <h2>{page.title || 'Untitled'}</h2>
           <p>{page.content}</p>
         </article>
       )}

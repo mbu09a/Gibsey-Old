@@ -1,14 +1,17 @@
 name: Embed Cron
+
 on:
   schedule:
     - cron: '0 3 * * *'  # daily 03:00 UTC
   workflow_dispatch:
+    inputs: {}
 
 jobs:
   embed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -22,7 +25,11 @@ jobs:
           
       - name: Run embedding script
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://your-supabase-url.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'your-supabase-anon-key' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python scripts/embed_seed.py --batch 5
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "Warning: OPENAI_API_KEY is not set. The script may not work as expected."
+          fi
+          python scripts/embed_seed.py --batch 5
