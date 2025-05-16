@@ -1,6 +1,64 @@
 name: CI
+
 on: [push, pull_request]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: gibsey_test
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gibsey_test
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
+  # Test using devcontainer
+  devcontainer-test:
+    name: Dev Container Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+
+      - name: Start services
+        run: |
+          docker compose -f docker-compose.yml up -d db
+          # Wait for PostgreSQL to be ready
+          ./scripts/wait-for-postgres.sh
+
+      - name: Run tests
+        run: |
+          # Install Python dependencies
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
+          
+          # Install Node.js dependencies
+          cd apps/frontend
+          npm ci
+          cd ../..
+          
+          # Run database migrations
+          ./scripts/setup_dev.sh
+          
+          # Run tests
+          pytest -v
+
+  # Linting and type checking
   backend-lint:
     runs-on: ubuntu-latest
     defaults:
@@ -10,13 +68,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - run: pip install ruff==0.4.1 pytest supabase
-      - run: ruff --output-format=github . || true  # allow warnings for now
-      - name: test
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
         run: |
-          pip install pytest
-          pytest -q app || true  # don't fail pipeline yet
+          python -m pip install --upgrade pip
+          pip install ruff==0.4.1 pytest supabase
+      
+      - name: Lint with ruff
+        run: ruff --output-format=github .
+      
+      - name: Run tests
+        run: |
+          pip install -r ../../requirements-test.txt
+          pytest -v
+
   frontend-lint:
     runs-on: ubuntu-latest
     defaults:
@@ -26,6 +100,21 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: eslint stub
-        run: npx -y eslint --init || true  # will exit 0 because not yet configured
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint with ESLint
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
+      
+      - name: Type check with TypeScript
+        run: npx tsc --noEmit

@@ -1,4 +1,4 @@
-# Gibsey MVP 🌀
+# Gibsey MVP 🌀 [![CI](https://github.com/yourusername/gibsey/actions/workflows/ci.yml/badge.svg?branch=codex-prep)](https://github.com/yourusername/gibsey/actions/workflows/ci.yml)
 
 > **A Novel AI OS**
 
@@ -49,13 +49,58 @@ gibsey/
 
 ## Quickstart
 
-### Prerequisites
+### Option 1: Local Development
+
+#### Prerequisites
 
 * Docker & Docker Compose
 * Python 3.11+
 * Node.js 18+ (for frontend development)
 
-### Development Setup
+### Option 2: Dev Container (Recommended)
+
+The easiest way to get started is using VS Code's Dev Containers or GitHub Codespaces.
+
+#### Prerequisites
+
+* [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+#### Setup
+
+1. **Open in Dev Container**
+   ```bash
+   # Clone the repository
+   git clone https://github.com/yourusername/gibsey.git
+   cd gibsey
+   
+   # Open in VS Code
+   code .
+   ```
+   
+   Then:
+   - Press `F1` or `Cmd+Shift+P` to open the command palette
+   - Select "Dev Containers: Reopen in Container"
+   - Wait for the container to build and start (first time may take a few minutes)
+
+2. **Verify the environment**
+   - The backend will be available at http://localhost:8000
+   - The frontend will be available at http://localhost:5173
+   - The database will be running in the background
+
+#### Using GitHub Codespaces
+
+Alternatively, you can use GitHub Codespaces:
+
+```bash
+git clone https://github.com/yourusername/gibsey.git
+cd gibsey
+gh codespace create --repo yourusername/gibsey --devcontainer-path .devcontainer/devcontainer.json
+```
+
+### Option 3: Local Development (Manual)
+
+Follow these steps if you prefer to run everything locally:
 
 1. **Clone the repository**
    ```bash

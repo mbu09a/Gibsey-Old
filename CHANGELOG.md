@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Added package-lock.json to lock Node.js dependencies for the frontend
 - Added scripts/build_and_tag.sh to build and tag Docker images with git SHA
 - Added docs/architecture/IMAGES.md documenting the Docker image versioning policy
+- Dev container configuration for VS Code and GitHub Codespaces
+- GitHub Actions CI workflow
+- Enhanced documentation for development setup
+- Pre-commit hooks for code quality
 
 ## [2025-05-16] - Idempotent Setup & Testing
 
