@@ -82,7 +82,7 @@ jobs:
         run: pnpm lint
       
       - name: Type check with TypeScript
-        run: pnpm typecheck
+        run: pnpm exec tsc --noEmit
         
       - name: Build application
         run: pnpm build
