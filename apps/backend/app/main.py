@@ -3,7 +3,9 @@ import json
 import pathlib
 import sys
 import textwrap
+from typing import Any, Dict
 
+from aiokafka import AIOKafkaAdminClient
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from openai import APIError
 from starlette.middleware.cors import CORSMiddleware
@@ -74,7 +76,26 @@ async def list_routes():
 
 @app.get("/health")
 async def health(settings: Settings = Depends(get_settings)):
-    return {"status": "ok", "env": settings.env}
+    return {"status": "ok", "environment": settings.environment}
+
+
+@app.get("/kafka/status")
+async def kafka_status() -> Dict[str, Any]:
+    """Check Kafka broker status and list topics."""
+    admin = AIOKafkaAdminClient(bootstrap_servers="kafka:9092")
+    try:
+        await admin.start()
+        topics = await admin.list_topics()
+        return {
+            "brokers": len(admin._client.cluster.brokers()),
+            "topics": topics,
+            "gift_events_topic": "gift_events" in topics,
+            "status": "ok" if "gift_events" in topics else "error",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Kafka connection error: {str(e)}")
+    finally:
+        await admin.close()
 
 
 @app.get("/debug")

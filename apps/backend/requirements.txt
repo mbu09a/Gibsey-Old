@@ -16,6 +16,10 @@ passlib[bcrypt]  # for password hashing
 python-multipart  # for file uploads
 aiofiles  # for async file operations
 
+# Event streaming
+faust-streaming>=0.10.0
+aiokafka>=0.8.0
+
 # Development dependencies
 pre-commit>=3.0.0
 ruff>=0.4.1
