@@ -6,6 +6,12 @@ Usage: python test_vector_search.py "Your query text here"
 import sys
 import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Add backend to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "apps", "backend")))
 
 from app.vector import similar_pages
