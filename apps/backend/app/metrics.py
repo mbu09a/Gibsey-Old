@@ -36,9 +36,9 @@ def instrument(model_name: str) -> Callable[[Callable[..., Any]], Callable[..., 
                 "cost_usd": cost,
             }
             print("[metrics]", json.dumps(log_obj))
-            LOG_DIR.joinpath(f"openai-{dt.date.today()}.jsonl").write_text(
-                json.dumps(log_obj) + "\n", append=True
-            )
+            log_file = LOG_DIR / f"openai-{dt.date.today()}.jsonl"
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_obj) + "\n")
             # attach metrics dict so caller can forward to headers
             resp._metrics = log_obj  # type: ignore[attr-defined]
             return resp

@@ -110,7 +110,7 @@ async def ask(req: AskRequest, response: Response):
     """Handle questions using RAG with GPT-4o and vector search."""
     try:
         # 1. Fetch similar shards using vector search
-        hits = await similar_pages(req.question, k=req.k or 3)
+        hits = similar_pages(req.question, k=req.k or 3)
         
         # Create context from top hits
         context = "\n---\n".join(

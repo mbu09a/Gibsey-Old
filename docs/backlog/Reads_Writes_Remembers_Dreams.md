@@ -1,6 +1,3 @@
-Absolutely—your framing of Reads as **liminal**, **generative**, and **input-driven** is a profound shift that reorients the entire architecture of Gibsey. Let's delve into this reconceptualization:
-
----
 
 ### 🌗 Reads as Liminal Inputs
 
