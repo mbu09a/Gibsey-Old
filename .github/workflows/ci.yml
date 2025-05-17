@@ -56,14 +56,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: 'npm'
           cache-dependency-path: 'apps/frontend/pnpm-lock.yaml'
       
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+        
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-          run_install: true
+        run: pnpm setup
       
       - name: Verify pnpm-lock.yaml
         run: |
