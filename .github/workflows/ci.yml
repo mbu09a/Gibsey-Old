@@ -91,18 +91,21 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       
       - name: Install pnpm
-        run: npm install -g pnpm@8
-        
-      - name: Setup pnpm
-        run: pnpm setup
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: true
       
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
       - name: Verify pnpm-lock.yaml
         run: |
           if [ ! -f "pnpm-lock.yaml" ]; then
             echo "Error: pnpm-lock.yaml not found"
             exit 1
           else
-            echo "pnpm-lock.yaml found and verified"
+            echo "pnpm-lock.yaml found"
           fi
       
       - name: Install dependencies
