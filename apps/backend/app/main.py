@@ -1,9 +1,15 @@
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from starlette.middleware.cors import CORSMiddleware
+from openai import OpenAI, APIError
 from .config import Settings, get_settings
 from .db import Supabase
 from .schemas import AskRequest, AskResponse, VaultSaveRequest
+from .vector import similar_pages, get_openai_client
 import time
+import textwrap
+import json
+import pathlib
+import datetime as dt
 
 app = FastAPI(
     title="Gibsey Backend",
@@ -85,71 +91,120 @@ async def read_page(id: int = Query(..., gt=0)):
         raise HTTPException(status_code=404, detail="Page not found")
     return page
 
+# OpenAI pricing constants (adjust to current rates)
+PRICE_PROMPT = 0.01 / 1000  # USD per 1k tokens for prompt
+PRICE_COMP = 0.03 / 1000     # USD per 1k tokens for completion
+
 @app.post("/ask", response_model=AskResponse)
-async def ask(req: AskRequest):
-    print("DEBUG: UPDATED /ask endpoint called with question:", req.question)  # Debug print
-    start = time.perf_counter()
-    response_metadata = {
-        "model": "gpt-4",
-        "context_pages": [],
-        "tokens_used": 0,
-        "response_time_ms": 0,
-        "error": None
-    }
-    
-    # Temporary response to verify code updates - VERSION 2
-    elapsed = (time.perf_counter() - start) * 1000
-    return {
-        "answer": "THIS IS A TEST RESPONSE - VERSION 2 - The RAG system is working correctly!",
-        "metadata": {
-            **response_metadata,
-            "response_time_ms": round(elapsed, 2),
-            "debug": "This is a test response to verify code updates"
-        }
-    }
+async def ask(req: AskRequest, response: Response):
+    """Handle questions using RAG with GPT-4o and vector search."""
+    t0 = time.perf_counter()
     
     try:
-        # Get relevant pages using vector search
-        from .vector import similar_pages
-        from .llm import generate_answer
+        # 1. Fetch similar shards using vector search
+        hits = await similar_pages(req.question, k=req.k or 3)
         
-        # Get the most relevant pages
-        relevant_pages = similar_pages(req.question, k=3)
-        response_metadata["context_pages"] = [
-            {"id": p["id"], "title": p["title"], "score": p["score"]}
-            for p in relevant_pages
-        ]
+        # Create context from top hits
+        context = "\n---\n".join(
+            f"Page {h['page_id']}: {textwrap.shorten(h.get('content', ''), 200, placeholder='...')}" 
+            for h in hits
+        )
         
-        if not relevant_pages:
-            response_metadata["error"] = "No relevant pages found"
+        # 2. Build the prompt for GPT-4o
+        system_msg = (
+            "You are the narrator of a metafictional novel called Gibsey. "
+            "Answer in ≤120 words, remain poetic but precise.\n\n"
+            f"Context:\n{context}\n\nQuestion: {req.question}"
+        )
+        
+        # 3. Call GPT-4o
+        client = get_openai_client()
+        try:
+            resp = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": system_msg}],
+                temperature=0.7,
+                max_tokens=160,
+            )
+            answer = resp.choices[0].message.content.strip()
+            usage = resp.usage  # prompt_tokens, completion_tokens, total_tokens
+        except APIError as e:
+            response.status_code = 503
             return {
-                "answer": "I couldn't find any relevant information to answer your question.",
-                "metadata": response_metadata
+                "answer": "Gibsey is momentarily lost in the dream fog. Try again shortly.",
+                "metadata": {"error": str(e), "model": "gpt-4o"}
             }
         
-        # Generate an answer using GPT-4
-        answer = generate_answer(req.question, relevant_pages)
+        # 4. Calculate metrics
+        latency_ms = round((time.perf_counter() - t0) * 1000)
+        cost = round((usage.prompt_tokens * PRICE_PROMPT + usage.completion_tokens * PRICE_COMP), 4)
         
-        # Calculate response time
-        elapsed = (time.perf_counter() - start) * 1000
-        response_metadata["response_time_ms"] = round(elapsed, 2)
+        # 5. Add observability headers
+        response.headers.update({
+            "X-Latency-MS": str(latency_ms),
+            "X-Prompt-Tokens": str(usage.prompt_tokens),
+            "X-Completion-Tokens": str(usage.completion_tokens),
+            "X-Cost-USD": str(cost),
+        })
         
-        print(f"/ask processed in {elapsed:.0f} ms")
+        # 6. Log the interaction (optional)
+        log_dir = pathlib.Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        log_entry = {
+            "timestamp": dt.datetime.utcnow().isoformat(),
+            "question": req.question,
+            "answer": answer,
+            "latency_ms": latency_ms,
+            "prompt_tokens": usage.prompt_tokens,
+            "completion_tokens": usage.completion_tokens,
+            "cost_usd": cost,
+            "context_pages": [h["page_id"] for h in hits]
+        }
+        log_file = log_dir / f"ask-{dt.date.today()}.jsonl"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
         
+        # 7. Return the response
         return {
             "answer": answer,
-            "metadata": response_metadata
+            "metadata": {
+                "model": "gpt-4o",
+                "context_pages": [h["page_id"] for h in hits],
+                "tokens_used": usage.total_tokens,
+                "response_time_ms": latency_ms,
+                "cost_usd": cost,
+                "error": None
+            }
         }
         
     except Exception as e:
         error_msg = str(e)
         print(f"Error in /ask endpoint: {error_msg}")
-        response_metadata["error"] = error_msg
-        response_metadata["response_time_ms"] = round((time.perf_counter() - start) * 1000, 2)
+        latency_ms = round((time.perf_counter() - t0) * 1000)
+        response.status_code = 500
+        
+        # Log the error
+        log_dir = pathlib.Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        log_entry = {
+            "timestamp": dt.datetime.utcnow().isoformat(),
+            "question": req.question if 'req' in locals() else "Unknown",
+            "error": error_msg,
+            "latency_ms": latency_ms
+        }
+        log_file = log_dir / f"errors-{dt.date.today()}.jsonl"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
         
         return {
             "answer": "I'm sorry, I encountered an error while processing your question. Please try again later.",
-            "metadata": response_metadata
+            "metadata": {
+                "model": "gpt-4o",
+                "context_pages": [],
+                "tokens_used": 0,
+                "response_time_ms": latency_ms,
+                "error": error_msg
+            }
         }
 
 @app.post("/vault/save", status_code=201)
