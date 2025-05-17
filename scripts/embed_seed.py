@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from openai import APIError, OpenAI
 from supabase import create_client
 
+
 MODEL = "text-embedding-3-small"
 PRICE_PER_1K = 0.00002  # USD for small model
 

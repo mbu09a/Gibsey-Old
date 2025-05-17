@@ -7,6 +7,7 @@ from supabase import Client
 from .config import get_settings
 from .db import Supabase
 
+
 MODEL = "text-embedding-3-small"
 
 # Default client for production use

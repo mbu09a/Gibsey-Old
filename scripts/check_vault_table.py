@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 
+
 load_dotenv()
 SB_URL = os.getenv("SUPABASE_URL")
 SB_KEY = os.getenv("SUPABASE_ANON_KEY")

@@ -7,11 +7,14 @@ import json
 import sys
 from pathlib import Path
 
+
 # Add backend to path before importing app modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "apps" / "backend"))
 
-from app.vector import similar_pages
 from dotenv import load_dotenv
+
+from app.vector import similar_pages
+
 
 # Load environment variables from .env file
 load_dotenv()

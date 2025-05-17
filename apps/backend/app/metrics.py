@@ -7,6 +7,7 @@ import pathlib
 import time
 from typing import Any, Callable
 
+
 # current OpenAI pricing (USD per 1k tokens — adjust as needed)
 PRICE = {
     "text-embedding-3-small": {"prompt": 0.00002, "completion": 0.0},

@@ -14,6 +14,7 @@ from .metrics import instrument
 from .schemas import AskRequest, AskResponse, VaultEntry, VaultSaveRequest
 from .vector import get_openai_client, similar_pages
 
+
 app = FastAPI(
     title="Gibsey Backend",
     version="1.0.0",

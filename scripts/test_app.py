@@ -4,6 +4,7 @@ import sys
 
 from fastapi.testclient import TestClient
 
+
 # Add the backend directory to the path
 sys.path.insert(0, "/Users/ghostradongus/Desktop/Gibsey/gibsey-repo/apps/backend")
 

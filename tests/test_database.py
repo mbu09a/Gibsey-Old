@@ -3,6 +3,7 @@
 import psycopg2
 import pytest
 
+
 # Database connection parameters
 DB_CONNECTION = {
     "dbname": "gibsey",

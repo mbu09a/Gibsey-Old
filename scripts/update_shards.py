@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 
+
 # Load environment variables
 load_dotenv()
 SB_URL = os.getenv("SUPABASE_URL")
