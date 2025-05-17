@@ -56,32 +56,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'apps/frontend/package-lock.json'
+          cache: 'pnpm'
+          cache-dependency-path: 'apps/frontend/pnpm-lock.yaml'
       
-      - name: Verify or generate lock file
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+      
+      - name: Verify pnpm-lock.yaml
         run: |
-          if [ ! -f "package-lock.json" ]; then
-            echo "package-lock.json not found. Generating lock file..."
-            npm install --package-lock-only
-            if [ $? -ne 0 ]; then
-              echo "Error: Failed to generate package-lock.json"
-              exit 1
-            fi
-            echo "Generated new package-lock.json"
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "Error: pnpm-lock.yaml not found"
+            exit 1
           else
-            echo "package-lock.json found and verified"
+            echo "pnpm-lock.yaml found and verified"
           fi
       
       - name: Install dependencies
         run: |
-          npm ci --no-audit --prefer-offline
+          pnpm install --frozen-lockfile
           
       - name: Lint with ESLint
-        run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
+        run: pnpm lint
       
       - name: Type check with TypeScript
-        run: npx tsc --noEmit
+        run: pnpm typecheck
         
       - name: Build application
-        run: npm run build
+        run: pnpm build
