@@ -2,10 +2,11 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
+from openai import OpenAI
 
 # Import the module under test
 from app.vector import _embed, similar_pages
-from openai import OpenAI
+
 
 # Set up environment variables
 os.environ.update(

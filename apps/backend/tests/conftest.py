@@ -2,7 +2,9 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from app.config import Settings
+
 
 # Set up test environment variables before importing anything that might use them
 os.environ.update(
