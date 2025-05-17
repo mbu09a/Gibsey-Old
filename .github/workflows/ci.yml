@@ -69,8 +69,12 @@ jobs:
       - name: Sort imports with isort
         run: isort --check-only .
       
+      - name: Install package in development mode
+        run: pip install -e .
+
       - name: Run tests
-        run: pytest -v tests/
+        run: |
+          PYTHONPATH=$PYTHONPATH:. pytest -v tests/
 
   # Frontend Linting and Type Checking
   frontend:
@@ -83,32 +87,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Setup Node.js with pnpm
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-      
+          
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-        id: pnpm-install
         with:
           version: 8
-          run_install: false
-      
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "PNPM_HOME=$(pnpm store path --silent)" >> $GITHUB_ENV
-          echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
-      
+          
       - name: Install dependencies
+        working-directory: apps/frontend
         run: |
           pnpm install --frozen-lockfile
           pnpm --version
-          which pnpm
-          echo "$PATH"
         
       - name: Verify pnpm-lock.yaml
         run: |
