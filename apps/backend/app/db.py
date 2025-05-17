@@ -3,8 +3,10 @@ from supabase import create_client, Client
 from fastapi import HTTPException
 from .config import get_settings
 
+from typing import Optional
+
 class Supabase:
-    _client: Client | None = None
+    _client: Optional[Client] = None
 
     @classmethod
     def client(cls) -> Client:

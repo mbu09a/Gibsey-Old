@@ -1,31 +1,87 @@
 name: CI
+
 on: [push, pull_request]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: gibsey_test
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5433/gibsey_test
+
+defaults:
+  run:
+    shell: bash
+    working-directory: apps/backend
+
 jobs:
-  backend-lint:
+  # Backend Linting and Testing
+  backend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - run: pip install ruff==0.4.1 pytest supabase
-      - run: ruff --output-format=github . || true  # allow warnings for now
-      - name: test
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
         run: |
-          pip install pytest
-          pytest -q app || true  # don't fail pipeline yet
-  frontend-lint:
+          python -m pip install --upgrade pip
+          pip install -r ../../requirements.txt -r ../../requirements-test.txt
+          pip install ruff==0.4.1 pytest supabase openai pytest-mock
+      
+      - name: Lint with ruff
+        run: |
+          ruff --output-format=github . || true  # Don't fail on warnings
+      
+      - name: Run tests
+        run: |
+          pytest -v tests/ || true  # Don't fail pipeline on test failures
+
+  # Frontend Linting and Type Checking
+  frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: eslint stub
-        run: npx -y eslint --init || true  # will exit 0 because not yet configured
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'apps/frontend/package-lock.json'
+      
+      - name: Verify or generate lock file
+        run: |
+          if [ ! -f "package-lock.json" ]; then
+            echo "package-lock.json not found. Generating lock file..."
+            npm install --package-lock-only
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to generate package-lock.json"
+              exit 1
+            fi
+            echo "Generated new package-lock.json"
+          else
+            echo "package-lock.json found and verified"
+          fi
+      
+      - name: Install dependencies
+        run: |
+          npm ci --no-audit --prefer-offline
+          
+      - name: Lint with ESLint
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
+      
+      - name: Type check with TypeScript
+        run: npx tsc --noEmit
+        
+      - name: Build application
+        run: npm run build

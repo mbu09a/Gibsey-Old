@@ -6,6 +6,13 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
+    metadata: dict = {
+        "model": "gpt-4",
+        "context_pages": [],
+        "tokens_used": 0,
+        "response_time_ms": 0,
+        "error": None
+    }
 
 class VaultSaveRequest(BaseModel):
     page_id: int
