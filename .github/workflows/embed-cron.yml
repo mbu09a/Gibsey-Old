@@ -26,4 +26,3 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/embed_seed.py --batch 5
-      - run: echo "Cron disabled until prod phase"
