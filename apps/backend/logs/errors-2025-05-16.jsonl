@@ -1,0 +1,5 @@
+{"timestamp": "2025-05-17T03:24:04.572245", "question": "What is the meaning of life?", "error": "500: Database connection error: Invalid API key", "latency_ms": 1}
+{"timestamp": "2025-05-17T03:24:04.607753", "question": "What is the meaning of life?", "error": "500: Database connection error: Invalid API key", "latency_ms": 1}
+{"timestamp": "2025-05-17T03:27:51.683776", "question": "What is the meaning of life?", "error": "object list can't be used in 'await' expression", "latency_ms": 0}
+{"timestamp": "2025-05-17T03:27:51.721716", "question": "What is the meaning of life?", "error": "500: Database connection error: Invalid API key", "latency_ms": 1}
+{"timestamp": "2025-05-17T03:28:12.242535", "question": "What is the meaning of life?", "error": "500: Database connection error: Invalid API key", "latency_ms": 1}
