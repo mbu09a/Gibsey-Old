@@ -100,7 +100,12 @@ jobs:
       - name: Install dependencies
         working-directory: apps/frontend
         run: |
-          pnpm install --frozen-lockfile
+          if [ -f "pnpm-lock.yaml" ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install
+            pnpm install --save-dev @types/node @types/react @types/react-dom @types/jest
+          fi
           pnpm --version
         
       - name: Verify pnpm-lock.yaml
