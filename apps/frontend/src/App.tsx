@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { readPage, ask, saveVault } from "./lib/api";
+import VaultTimeline from "./components/VaultTimeline";
 
 interface PageData {
   id: number;
@@ -77,6 +78,11 @@ export default function App() {
           )}
         </div>
       )}
+      
+      {/* Vault Timeline */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-10 mt-10">
+        <VaultTimeline />
+      </div>
     </div>
   );
 }

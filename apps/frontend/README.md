@@ -1,6 +1,58 @@
-# React + TypeScript + Vite
+# Gibsey Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend for the Gibsey application, built with React, TypeScript, and Vite.
+
+## Features
+
+- Modern React with TypeScript
+- Tailwind CSS for styling
+- Vite for fast development and builds
+- Integration with the Gibsey backend API
+- Vault feature to save and view Q&A entries
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and pnpm
+- Gibsey backend server running (see backend README for setup)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+
+   ```bash
+   pnpm install
+   ```
+
+3. Copy the example environment file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Update the `.env` file with your backend API URL if needed
+
+### Development
+
+To start the development server:
+
+```bash
+pnpm dev
+```
+
+This will start the Vite development server at `http://localhost:5173` by default.
+
+### Building for Production
+
+To create a production build:
+
+```bash
+pnpm build
+```
+
+The build artifacts will be stored in the `dist/` directory.
 
 Currently, two official plugins are available:
 

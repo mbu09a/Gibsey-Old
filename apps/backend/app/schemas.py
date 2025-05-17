@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Union
+from typing import Optional, Union, List
+from datetime import datetime
 
 class AskRequest(BaseModel):
     page_id: int = Field(1, gt=0)          # default to shard 1 for now
@@ -15,6 +16,12 @@ class AskResponse(BaseModel):
         "response_time_ms": 0,
         "error": None
     }
+
+class VaultEntry(BaseModel):
+    id: int
+    question: str
+    answer: str
+    created_at: datetime
 
 class VaultSaveRequest(BaseModel):
     page_id: int

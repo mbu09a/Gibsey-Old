@@ -1,9 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from sqlalchemy import desc
 from starlette.middleware.cors import CORSMiddleware
 from openai import OpenAI, APIError
 from .config import Settings, get_settings
 from .db import Supabase
-from .schemas import AskRequest, AskResponse, VaultSaveRequest
+from .schemas import AskRequest, AskResponse, VaultSaveRequest, VaultEntry
 from .vector import similar_pages, get_openai_client
 import time
 import textwrap
@@ -28,11 +29,20 @@ async def root():
         "redoc": "/redoc",
         "openapi_schema": "/openapi.json"
     }
+
+# CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # dev only
+    allow_origins=[
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173",  # Alternative localhost
+        "http://localhost:8000",   # Backend
+        "http://127.0.0.1:8000"   # Backend alternative
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Debug endpoint to list all routes
@@ -206,6 +216,29 @@ async def ask(req: AskRequest, response: Response):
                 "error": error_msg
             }
         }
+
+@app.get("/vault/list", response_model=list[VaultEntry])
+async def list_vault_entries(
+    page: int = Query(1, gt=0, description="Page number, starting from 1"),
+    limit: int = Query(20, gt=0, le=100, description="Number of items per page, max 100")
+):
+    """
+    List vault entries with pagination.
+    Returns the most recent entries first.
+    """
+    try:
+        offset = (page - 1) * limit
+        response = (
+            Supabase.client()
+            .table("vault")
+            .select("id, question, answer, created_at")
+            .order("created_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching vault entries: {str(e)}")
 
 @app.post("/vault/save", status_code=201)
 async def save_to_vault(req: VaultSaveRequest):
