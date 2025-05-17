@@ -4,8 +4,10 @@ This script inserts shards 2-33 with null embeddings, allowing embed_seed.py to 
 """
 import os
 import sys
+
 from dotenv import load_dotenv
 from supabase import create_client
+
 
 load_dotenv()
 SB_URL = os.getenv("SUPABASE_URL")
@@ -25,7 +27,7 @@ for i in range(2, 34):  # 2 through 33
     if i in existing_ids:
         print(f"Shard {i} already exists, skipping")
         continue
-        
+
     shard_data = {
         "id": i,
         "title": f"An Author's Preface — Shard {i}",
@@ -33,7 +35,7 @@ for i in range(2, 34):  # 2 through 33
         "symbol_id": 1,  # Using symbol 1 for all shards as a default
         "embedding": None,  # Start with null embedding
     }
-    
+
     result = sb.table("pages").insert(shard_data).execute()
     print(f"Inserted shard {i} successfully")
 
