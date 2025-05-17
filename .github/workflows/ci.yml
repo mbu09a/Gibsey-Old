@@ -52,7 +52,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Set up Node.js ${{ env.NODE_VERSION }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -60,10 +60,10 @@ jobs:
           cache-dependency-path: 'apps/frontend/pnpm-lock.yaml'
       
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v3
         with:
           version: 8
-          run_install: false
+          run_install: true
       
       - name: Verify pnpm-lock.yaml
         run: |
