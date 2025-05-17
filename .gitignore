@@ -49,3 +49,7 @@ Thumbs.db
 
 # Claude
 **/.claude/settings.local.json
+
+# Logs
+/logs/*
+!logs/.gitkeep

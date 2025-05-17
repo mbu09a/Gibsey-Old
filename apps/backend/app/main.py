@@ -6,6 +6,7 @@ from .config import Settings, get_settings
 from .db import Supabase
 from .schemas import AskRequest, AskResponse, VaultSaveRequest, VaultEntry
 from .vector import similar_pages, get_openai_client
+from .metrics import instrument
 import time
 import textwrap
 import json
@@ -101,18 +102,15 @@ async def read_page(id: int = Query(..., gt=0)):
         raise HTTPException(status_code=404, detail="Page not found")
     return page
 
-# OpenAI pricing constants (adjust to current rates)
-PRICE_PROMPT = 0.01 / 1000  # USD per 1k tokens for prompt
-PRICE_COMP = 0.03 / 1000     # USD per 1k tokens for completion
+# OpenAI model name constant
+OPENAI_MODEL = "gpt-4o"
 
 @app.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest, response: Response):
     """Handle questions using RAG with GPT-4o and vector search."""
-    t0 = time.perf_counter()
-    
     try:
         # 1. Fetch similar shards using vector search
-        hits = await similar_pages(req.question, k=req.k or 3)
+        hits = similar_pages(req.question, k=req.k or 3)
         
         # Create context from top hits
         context = "\n---\n".join(
@@ -127,62 +125,47 @@ async def ask(req: AskRequest, response: Response):
             f"Context:\n{context}\n\nQuestion: {req.question}"
         )
         
-        # 3. Call GPT-4o
+        # 3. Call GPT-4o with instrumentation
         client = get_openai_client()
-        try:
-            resp = client.chat.completions.create(
-                model="gpt-4o",
+        
+        @instrument(OPENAI_MODEL)
+        def _chat_completion():
+            return client.chat.completions.create(
+                model=OPENAI_MODEL,
                 messages=[{"role": "user", "content": system_msg}],
                 temperature=0.7,
                 max_tokens=160,
             )
+            
+        try:
+            resp = _chat_completion()
             answer = resp.choices[0].message.content.strip()
-            usage = resp.usage  # prompt_tokens, completion_tokens, total_tokens
+            metrics = resp._metrics  # Get metrics from the decorator
+            
         except APIError as e:
             response.status_code = 503
             return {
                 "answer": "Gibsey is momentarily lost in the dream fog. Try again shortly.",
-                "metadata": {"error": str(e), "model": "gpt-4o"}
+                "metadata": {"error": str(e), "model": OPENAI_MODEL}
             }
         
-        # 4. Calculate metrics
-        latency_ms = round((time.perf_counter() - t0) * 1000)
-        cost = round((usage.prompt_tokens * PRICE_PROMPT + usage.completion_tokens * PRICE_COMP), 4)
-        
-        # 5. Add observability headers
+        # 4. Add observability headers
         response.headers.update({
-            "X-Latency-MS": str(latency_ms),
-            "X-Prompt-Tokens": str(usage.prompt_tokens),
-            "X-Completion-Tokens": str(usage.completion_tokens),
-            "X-Cost-USD": str(cost),
+            "X-Latency-MS": str(metrics["elapsed_ms"]),
+            "X-Prompt-Tokens": str(metrics["prompt_tokens"]),
+            "X-Completion-Tokens": str(metrics["completion_tokens"]),
+            "X-Cost-USD": str(metrics["cost_usd"]),
         })
         
-        # 6. Log the interaction (optional)
-        log_dir = pathlib.Path("logs")
-        log_dir.mkdir(exist_ok=True)
-        log_entry = {
-            "timestamp": dt.datetime.utcnow().isoformat(),
-            "question": req.question,
-            "answer": answer,
-            "latency_ms": latency_ms,
-            "prompt_tokens": usage.prompt_tokens,
-            "completion_tokens": usage.completion_tokens,
-            "cost_usd": cost,
-            "context_pages": [h["page_id"] for h in hits]
-        }
-        log_file = log_dir / f"ask-{dt.date.today()}.jsonl"
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry) + "\n")
-        
-        # 7. Return the response
+        # 5. Return the response
         return {
             "answer": answer,
             "metadata": {
-                "model": "gpt-4o",
+                "model": OPENAI_MODEL,
                 "context_pages": [h["page_id"] for h in hits],
-                "tokens_used": usage.total_tokens,
-                "response_time_ms": latency_ms,
-                "cost_usd": cost,
+                "tokens_used": metrics["prompt_tokens"] + metrics["completion_tokens"],
+                "response_time_ms": metrics["elapsed_ms"],
+                "cost_usd": metrics["cost_usd"],
                 "error": None
             }
         }
@@ -190,7 +173,6 @@ async def ask(req: AskRequest, response: Response):
     except Exception as e:
         error_msg = str(e)
         print(f"Error in /ask endpoint: {error_msg}")
-        latency_ms = round((time.perf_counter() - t0) * 1000)
         response.status_code = 500
         
         # Log the error
@@ -200,7 +182,7 @@ async def ask(req: AskRequest, response: Response):
             "timestamp": dt.datetime.utcnow().isoformat(),
             "question": req.question if 'req' in locals() else "Unknown",
             "error": error_msg,
-            "latency_ms": latency_ms
+            "type": "error"
         }
         log_file = log_dir / f"errors-{dt.date.today()}.jsonl"
         with open(log_file, "a", encoding="utf-8") as f:
@@ -209,10 +191,9 @@ async def ask(req: AskRequest, response: Response):
         return {
             "answer": "I'm sorry, I encountered an error while processing your question. Please try again later.",
             "metadata": {
-                "model": "gpt-4o",
+                "model": OPENAI_MODEL,
                 "context_pages": [],
                 "tokens_used": 0,
-                "response_time_ms": latency_ms,
                 "error": error_msg
             }
         }

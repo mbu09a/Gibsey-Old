@@ -8,3 +8,9 @@ pytest
 httpx  # for TestClient
 supabase>=2.0.0  # official Python client
 openai>=1.23  # for embeddings
+sqlalchemy>=2.0.0  # for database ORM
+psycopg2-binary  # PostgreSQL database adapter
+python-jose[cryptography]  # for JWT tokens
+passlib[bcrypt]  # for password hashing
+python-multipart  # for file uploads
+aiofiles  # for async file operations

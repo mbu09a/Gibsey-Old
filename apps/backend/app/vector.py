@@ -14,7 +14,10 @@ def get_openai_client() -> OpenAI:
     """Get the OpenAI client, creating it if it doesn't exist."""
     global _default_client
     if _default_client is None:
-        _default_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY") or get_settings().openai_api_key)
+        _default_client = OpenAI(
+            api_key=os.environ.get("OPENAI_API_KEY") or get_settings().openai_api_key,
+            timeout=30.0  # Add a timeout to prevent hanging
+        )
     return _default_client
 
 def _embed(text: str, client: Optional[OpenAI] = None) -> List[float]:
@@ -42,12 +45,22 @@ def similar_pages(query: str, k: int = 3, client: Optional[OpenAI] = None) -> Li
     """
     vec = _embed(query, client=client)
     sb: Client = Supabase.client()
-    rows = (
-        sb.rpc(
+    
+    try:
+        # Execute the RPC call and get the response
+        response = sb.rpc(
             "match_pages",  # Postgres function for vector similarity
             {"query_embedding": vec, "match_k": k},
-        )
-        .execute()
-        .data
-    )
-    return rows  # [{id, title, content, score}]
+        ).execute()
+        
+        # Ensure each result has a page_id field
+        results = response.data or []
+        for result in results:
+            if 'page_id' not in result and 'id' in result:
+                result['page_id'] = result['id']
+                
+        return results
+        
+    except Exception as e:
+        print(f"Error in similar_pages: {str(e)}")
+        return []  # Return empty list on error
