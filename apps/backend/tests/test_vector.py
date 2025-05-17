@@ -1,94 +1,120 @@
+import os
+import sys
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
+from openai import OpenAI
 
+# Set up environment variables before importing the module under test
+os.environ.update({
+    "SUPABASE_URL": "https://test.supabase.co",
+    "SUPABASE_ANON_KEY": "test-key",
+    "OPENAI_API_KEY": "test-openai-key"
+})
 
-class DummyEmbed:
-    def __init__(self):
-        # Deterministic small vectors for testing
-        self.vectors = {
-            "q1": [0.9, 0.1],
-            "q2": [0.1, 0.9],
-            "mixed": [0.5, 0.5]
-        }
-        
-    def create(self, **kwargs):
-        query = kwargs.get("input", "q1")
-        # For testing purposes, treat the input as a key to our predefined vectors
-        vector = self.vectors.get(query, self.vectors["q1"])
-        
-        class Response:
-            class EmbeddingData:
-                def __init__(self, vec):
-                    self.embedding = vec
-            
-            data = [EmbeddingData(vector)]
-        
-        return Response()
+# Import the module under test
+try:
+    from app.vector import similar_pages, _embed, get_openai_client
+except ImportError:
+    # If the import fails, try to add the parent directory to the path
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from app.vector import similar_pages, _embed, get_openai_client
 
+# Mock the OpenAI client for testing
+class MockEmbeddingData:
+    def __init__(self, embedding):
+        self.embedding = embedding
+
+class MockEmbeddingResponse:
+    def __init__(self, embedding):
+        self.data = [MockEmbeddingData(embedding)]
+
+# Create a mock OpenAI client for testing
+mock_client = MagicMock(spec=OpenAI)
+mock_client.embeddings = MagicMock()
+mock_client.embeddings.create.return_value = MockEmbeddingResponse([0.1, 0.2, 0.3])
 
 def test_embed():
     """Test the _embed function with a mock OpenAI client."""
-    with patch("app.vector.client", DummyEmbed()):
-        from app.vector import _embed
-        
-        # Test with a known query
-        result = _embed("q1")
-        assert result == [0.9, 0.1]
-        
-        # Test with a different query
-        result = _embed("q2")
-        assert result == [0.1, 0.9]
-
+    # Test the _embed function with our mock client
+    result = _embed("test query", client=mock_client)
+    
+    # Check the result
+    assert result == [0.1, 0.2, 0.3]
+    
+    # Verify the OpenAI client was called correctly
+    mock_client.embeddings.create.assert_called_once_with(
+        model="text-embedding-3-small",
+        input="test query"
+    )
 
 def test_similar_pages():
     """Test the similar_pages function with mocked dependencies."""
-    # Mock both OpenAI client and Supabase client
-    with patch("app.vector.client", DummyEmbed()):
-        from app.vector import similar_pages
-        
-        # Create mock for Supabase RPC result
-        mock_db_result = MagicMock()
-        mock_db_result.execute.return_value.data = [
-            {"id": 1, "title": "Page 1", "content": "Content 1", "score": 0.95},
-            {"id": 2, "title": "Page 2", "content": "Content 2", "score": 0.85},
-            {"id": 3, "title": "Page 3", "content": "Content 3", "score": 0.75}
-        ]
-        
-        # Mock the Supabase client
+    # Create a fresh mock client for this test
+    test_client = MagicMock(spec=OpenAI)
+    test_client.embeddings = MagicMock()
+    test_client.embeddings.create.return_value = MockEmbeddingResponse([0.1, 0.2, 0.3])
+    
+    # Mock the Supabase client
+    with patch('app.vector.Supabase') as mock_supabase_class:
         mock_supabase = MagicMock()
-        mock_supabase.rpc.return_value = mock_db_result
+        mock_supabase_class.client.return_value = mock_supabase
         
-        # Patch the Supabase.client() method
-        with patch("app.vector.Supabase.client", return_value=mock_supabase):
-            # Test with k=3
-            results = similar_pages("test query", k=3)
-            
-            # Check that the correct number of results is returned
-            assert len(results) == 3
-            
-            # Check that the results have the expected fields
-            for result in results:
-                assert "id" in result
-                assert "title" in result
-                assert "content" in result
-                assert "score" in result
-            
-            # Verify the Supabase RPC call was made correctly
-            mock_supabase.rpc.assert_called_once_with(
-                "match_pages",
-                {"query_embedding": [0.9, 0.1], "match_k": 3}
-            )
-            
-            # Test with k=1
-            mock_supabase.reset_mock()
-            mock_db_result.execute.return_value.data = [
-                {"id": 1, "title": "Page 1", "content": "Content 1", "score": 0.95}
-            ]
-            mock_supabase.rpc.return_value = mock_db_result
-            
-            results = similar_pages("test query", k=1)
-            assert len(results) == 1
-            mock_supabase.rpc.assert_called_once_with(
-                "match_pages",
-                {"query_embedding": [0.9, 0.1], "match_k": 1}
-            )
+        # Mock the RPC call chain
+        mock_rpc = MagicMock()
+        mock_execute = MagicMock()
+        mock_execute.data = [
+            {"id": 1, "title": "Test", "content": "Test content", "score": 0.95},
+            {"id": 2, "title": "Test 2", "content": "More content", "score": 0.9}
+        ]
+        mock_rpc.execute.return_value = mock_execute
+        mock_supabase.rpc.return_value = mock_rpc
+        
+        # Test the function with our mock client
+        results = similar_pages("test query", k=2, client=test_client)
+        
+        # Assertions
+        assert len(results) == 2
+        assert results[0]["title"] == "Test"
+        assert results[1]["title"] == "Test 2"
+        mock_supabase.rpc.assert_called_once_with(
+            "match_pages",
+            {"query_embedding": [0.1, 0.2, 0.3], "match_k": 2}
+        )
+
+def test_similar_pages_empty_result():
+    """Test similar_pages with empty result from database."""
+    # Create a fresh mock client for this test
+    test_client = MagicMock(spec=OpenAI)
+    test_client.embeddings = MagicMock()
+    test_client.embeddings.create.return_value = MockEmbeddingResponse([0.1, 0.2, 0.3])
+    
+    # Mock the Supabase client
+    with patch('app.vector.Supabase') as mock_supabase_class:
+        mock_supabase = MagicMock()
+        mock_supabase_class.client.return_value = mock_supabase
+        
+        # Mock empty result
+        mock_rpc = MagicMock()
+        mock_execute = MagicMock()
+        mock_execute.data = []
+        mock_rpc.execute.return_value = mock_execute
+        mock_supabase.rpc.return_value = mock_rpc
+        
+        # Test the function with our mock client
+        results = similar_pages("test query", client=test_client)
+        
+        # Assertions
+        assert results == []
+        mock_supabase.rpc.assert_called_once()
+
+def test_embed_error_handling():
+    """Test error handling in _embed function."""
+    # Create a fresh mock client for this test
+    test_client = MagicMock(spec=OpenAI)
+    test_client.embeddings = MagicMock()
+    test_client.embeddings.create.side_effect = Exception("API Error")
+    
+    # Test that the exception is raised
+    with pytest.raises(Exception, match="API Error"):
+        _embed("test query", client=test_client)
