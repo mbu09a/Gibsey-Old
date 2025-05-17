@@ -25,11 +25,12 @@ jobs:
           
       - name: Run embedding script
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://your-supabase-url.supabase.co' }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'your-supabase-anon-key' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "Warning: OPENAI_API_KEY is not set. The script may not work as expected."
+          if [ -z "$OPENAI_API_KEY" ] || [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Error: Required environment variables not set. Please configure GitHub Secrets."
+            exit 1
           fi
           python scripts/embed_seed.py --batch 5
