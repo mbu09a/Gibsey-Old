@@ -106,7 +106,7 @@ async def list_routes():
 
 @app.get("/health")
 async def health(settings: Settings = Depends(get_settings)):
-    return {"status": "ok", "environment": settings.environment}
+    return {"status": "ok", "environment": settings.env}
 
 
 @app.get("/kafka/status")
