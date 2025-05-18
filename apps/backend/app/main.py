@@ -3,8 +3,10 @@ import json
 import pathlib
 import sys
 import textwrap
+from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from kafka import KafkaAdminClient, KafkaProducer
 from openai import APIError
 from starlette.middleware.cors import CORSMiddleware
 
@@ -13,6 +15,36 @@ from .db import Supabase
 from .metrics import instrument
 from .schemas import AskRequest, AskResponse, VaultEntry, VaultSaveRequest
 from .vector import get_openai_client, similar_pages
+
+
+# Initialize Kafka producer
+producer: Optional[KafkaProducer] = None
+
+
+def get_kafka_producer() -> KafkaProducer:
+    global producer
+    if producer is None:
+        producer = KafkaProducer(
+            bootstrap_servers="kafka:29092",  # Using internal Docker network
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            api_version=(2, 8, 0),  # Specify a stable API version
+            request_timeout_ms=10000,  # 10 second timeout
+            retry_backoff_ms=1000,  # Wait 1s between retries
+            max_in_flight_requests_per_connection=1,  # Ensure ordering
+        )
+    return producer
+
+
+async def publish_gift_event(payload: dict):
+    """Publish a gift event to the gift_events topic."""
+    producer = get_kafka_producer()
+    try:
+        future = producer.send("gift_events", value=payload)
+        # Wait for the message to be sent
+        future.get(timeout=10)
+    except Exception as e:
+        print(f"Failed to send message to Kafka: {e}")
+        raise
 
 
 app = FastAPI(
@@ -74,7 +106,35 @@ async def list_routes():
 
 @app.get("/health")
 async def health(settings: Settings = Depends(get_settings)):
-    return {"status": "ok", "env": settings.env}
+    return {"status": "ok", "environment": settings.env}
+
+
+@app.get("/kafka/status")
+async def kafka_status() -> Dict[str, Any]:
+    """Check Kafka broker status and list topics."""
+    admin = None
+    try:
+        admin = KafkaAdminClient(
+            bootstrap_servers="kafka:9092",  # Using container name in Docker network
+            request_timeout_ms=5000,  # 5 second timeout
+            client_id="gibsey-backend",
+            api_version_auto_timeout_ms=5000,
+        )
+        topics = admin.list_topics()
+        return {
+            "topics": topics,
+            "gift_events_topic": "gift_events" in topics,
+            "status": "ok" if "gift_events" in topics else "error",
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "error",
+            "message": "Failed to connect to Kafka",
+        }
+    finally:
+        if admin:
+            admin.close()
 
 
 @app.get("/debug")
@@ -246,13 +306,21 @@ async def list_vault_entries(
         )
 
 
-@app.post("/vault/save", status_code=201)
+@app.post("/vault/save", status_code=202)
 async def save_to_vault(req: VaultSaveRequest):
-    Supabase.client().table("vault").insert(
-        {
-            "page_id": req.page_id,
-            "question": req.question,
-            "answer": req.answer,
-        }
-    ).execute()
-    return {"ok": True}
+    """Save a vault entry by publishing an event to Kafka."""
+    payload = {
+        "page_id": req.page_id,
+        "question": req.question,
+        "answer": req.answer,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "symbol_id": None,  # Will be set by the Faust worker if needed
+    }
+
+    try:
+        await publish_gift_event(payload)
+        return {"status": "queued", "message": "Gift event queued for processing"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to queue gift event: {str(e)}"
+        )

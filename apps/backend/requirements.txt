@@ -1,20 +1,23 @@
 # Runtime dependencies
-fastapi
-uvicorn[standard]
-python-dotenv
-pydantic[dotenv]
-pydantic-settings
-python-multipart   # future‑proof uploads
-pytest
-httpx  # for TestClient
+fastapi>=0.95.0
+uvicorn[standard]>=0.21.0
+python-dotenv>=1.0.0
+pydantic[dotenv]>=1.10.7
+pydantic-settings>=2.0.0
+python-multipart>=0.0.6
+pytest>=7.3.1
+httpx>=0.24.0  # for TestClient
 supabase>=2.0.0  # official Python client
-openai>=1.23  # for embeddings
+openai>=1.23.0  # for embeddings
 sqlalchemy>=2.0.0  # for database ORM
-psycopg2-binary  # PostgreSQL database adapter
-python-jose[cryptography]  # for JWT tokens
-passlib[bcrypt]  # for password hashing
-python-multipart  # for file uploads
-aiofiles  # for async file operations
+psycopg2-binary>=2.9.6  # PostgreSQL database adapter
+python-jose[cryptography]>=3.3.0  # for JWT tokens
+passlib[bcrypt]>=1.7.4  # for password hashing
+aiofiles>=23.1.0  # for async file operations
+
+# Event streaming
+faust-streaming==0.10.22  # Specific version known to work well
+kafka-python==2.0.2  # Specific version compatible with faust-streaming
 
 # Development dependencies
 pre-commit>=3.0.0

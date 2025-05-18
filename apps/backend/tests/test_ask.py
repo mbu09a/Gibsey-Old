@@ -18,16 +18,14 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def mock_similar_pages():
     """Fixture to mock the similar_pages function."""
-
-    async def mock_async_return(*args, **kwargs):
-        return [
-            {"page_id": 1, "content": "Sample content 1"},
-            {"page_id": 2, "content": "Sample content 2"},
-        ]
+    mock_return = [
+        {"page_id": 1, "content": "Sample content 1"},
+        {"page_id": 2, "content": "Sample content 2"},
+    ]
 
     with patch("app.main.similar_pages") as mock:
         # Mock return value for similar_pages
-        mock.side_effect = mock_async_return
+        mock.return_value = mock_return
         yield mock
 
 
