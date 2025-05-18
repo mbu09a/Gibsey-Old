@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+WORKDIR /code
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libpq-dev \
+    librdkafka-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install specific versions of Kafka and database dependencies
+RUN pip install --no-cache-dir \
+    confluent-kafka==2.3.0 \
+    psycopg2-binary==2.9.6 \
+    sqlalchemy==2.0.23 \
+    python-json-logger==2.0.7
+
+COPY . .
+
+# Install the rest of the requirements
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Make the script executable
+RUN chmod +x /code/app/kafka_consumer.py
+
+# Set the command to run the Kafka consumer
+CMD ["python", "/code/app/kafka_consumer.py"]

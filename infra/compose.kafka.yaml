@@ -1,0 +1,42 @@
+name: gibsey-kafka-test
+services:
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.2
+    command: >-
+      redpanda start
+      --overprovisioned
+      --smp 1
+      --memory 256M
+      --reserve-memory 0M
+      --node-id 0
+      --check=false
+    ports:
+      - "9092:9092"        # Kafka API
+      - "9644:9644"        # Admin HTTP (optional)
+      
+  kafka-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.2
+    depends_on: [kafka]
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...' && \
+      until rpk cluster info --brokers kafka:9092 >/dev/null 2>&1; do
+        echo 'Waiting for Kafka...' && sleep 1;
+      done && \
+      echo 'Creating gift_events topic...' && \
+      rpk topic create gift_events --brokers kafka:9092 --partitions 1 --replicas 1 || \
+      echo 'Topic creation failed (might already exist)'
+      "
+
+  faust-worker:
+    build: ../../..
+    command: ["faust", "-A", "app.faust_worker", "worker", "-l", "info"]
+    depends_on:
+      - kafka
+    volumes:
+      - ../../../apps/backend:/code
+    environment:
+      - PYTHONPATH=/code
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    working_dir: /code/apps/backend
