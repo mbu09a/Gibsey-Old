@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Test FastAPI app directly."""
 import sys
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-
-# Add the backend directory to the path
-sys.path.insert(0, "/Users/ghostradongus/Desktop/Gibsey/gibsey-repo/apps/backend")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+BACKEND_PATH = REPO_ROOT / "apps" / "backend"
+sys.path.insert(0, str(BACKEND_PATH))
 
 # Import the FastAPI app
 try:
