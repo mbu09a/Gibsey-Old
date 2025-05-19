@@ -22,6 +22,13 @@ A minimal, functional stack:
 
 Full loop: `React → FastAPI → PostgreSQL → React` in ≤ 2 seconds.
 
+## Prerequisite Tools
+
+- Docker & Docker Compose
+- Python 3.11+
+- Node.js 18+
+
+
 ---
 
 ## Repository Structure
@@ -44,6 +51,28 @@ gibsey/
     └── architecture/
         └── IMAGES.md # Docker image versioning policy
 ```
+
+## Scripts Directory
+
+Most helper scripts assume the Docker services are running via `make dev` and should be executed from within the container.
+
+- `build_and_tag.sh` – build backend and frontend images tagged with the current Git SHA.
+- `setup_dev.sh` – start the database, insert missing shards and seed embeddings.
+- `reset_db.sh` – drop all tables and reinitialize the database.
+- `embed_seed.py` – embed any pages with a null embedding.
+- `insert_missing_shards.py` – add placeholder shards if shards 2–33 are missing.
+- `update_shards.py` – update shard content from a local file.
+- `check_embeddings.py` – report how many pages have embeddings.
+- `check_pages_structure.py` – show the structure of the `pages` table.
+- `check_shards.py` – verify shard-related tables exist.
+- `check_vault_table.py` – inspect the `vault` table.
+- `list_all_tables.py` – list every table in the database.
+- `verify_db.py` – sanity check required extensions and tables.
+- `verify_changes.py` – confirm local code imports correctly.
+- `wait-for-postgres.sh` – wait until PostgreSQL accepts connections.
+- `svg_generator.py` – generate gate SVG diagrams.
+- Test helpers: `test_app.py`, `test_fastapi_direct.py`, `test_ask_endpoint.py`, `test_vector_search.py`, `test_kafka.py`, `test_faust_worker.py`, `test_faust_worker.sh`.
+- SQL utilities: `create_match_pages_function.sql`, `create_vault_table.sql`.
 
 ---
 
